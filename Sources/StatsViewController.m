@@ -131,10 +131,10 @@
         [chartScroll.trailingAnchor constraintEqualToAnchor:chartCard.trailingAnchor constant:-16],
         [chartScroll.bottomAnchor constraintEqualToAnchor:chartCard.bottomAnchor constant:-12],
 
-        [chart.topAnchor constraintEqualToAnchor:chartScroll.frameLayoutGuide.topAnchor],
-        [chart.bottomAnchor constraintEqualToAnchor:chartScroll.frameLayoutGuide.bottomAnchor],
+        [chart.topAnchor constraintEqualToAnchor:chartScroll.contentLayoutGuide.topAnchor],
         [chart.leadingAnchor constraintEqualToAnchor:chartScroll.contentLayoutGuide.leadingAnchor],
         [chart.widthAnchor constraintEqualToConstant:chartContentWidth],
+        [chart.heightAnchor constraintEqualToAnchor:chartScroll.frameLayoutGuide.heightAnchor],
     ]];
     [stack addArrangedSubview:chartCard];
     [chartCard.heightAnchor constraintEqualToConstant:190].active = YES;
