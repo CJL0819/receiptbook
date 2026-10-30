@@ -90,19 +90,36 @@
     UILabel *chartTitle = [self labelWithText:@"每日支出"
                                         font:[UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline]
                                        color:[UIColor secondaryLabelColor]];
+    UIScrollView *chartScroll = [[UIScrollView alloc] init];
+    chartScroll.showsHorizontalScrollIndicator = YES;
+    chartScroll.translatesAutoresizingMaskIntoConstraints = NO;
+
     DailyBarChartView *chart = [[DailyBarChartView alloc] initWithFrame:CGRectZero];
     chart.values = dailyTotals;
-    chartTitle.translatesAutoresizingMaskIntoConstraints = NO;
     chart.translatesAutoresizingMaskIntoConstraints = NO;
+    [chartScroll addSubview:chart];
+
+    chartTitle.translatesAutoresizingMaskIntoConstraints = NO;
     [chartCard addSubview:chartTitle];
-    [chartCard addSubview:chart];
+    [chartCard addSubview:chartScroll];
+
+    CGFloat chartScrollWidth = width - 64; // 卡片左右各 16 + 内容左右各 16
+    CGFloat chartContentWidth = MAX(chartScrollWidth, dailyTotals.count * 22.0);
+
     [NSLayoutConstraint activateConstraints:@[
         [chartTitle.topAnchor constraintEqualToAnchor:chartCard.topAnchor constant:12],
         [chartTitle.leadingAnchor constraintEqualToAnchor:chartCard.leadingAnchor constant:16],
-        [chart.topAnchor constraintEqualToAnchor:chartTitle.bottomAnchor constant:8],
-        [chart.leadingAnchor constraintEqualToAnchor:chartCard.leadingAnchor constant:16],
-        [chart.trailingAnchor constraintEqualToAnchor:chartCard.trailingAnchor constant:-16],
-        [chart.bottomAnchor constraintEqualToAnchor:chartCard.bottomAnchor constant:-12],
+
+        [chartScroll.topAnchor constraintEqualToAnchor:chartTitle.bottomAnchor constant:8],
+        [chartScroll.leadingAnchor constraintEqualToAnchor:chartCard.leadingAnchor constant:16],
+        [chartScroll.trailingAnchor constraintEqualToAnchor:chartCard.trailingAnchor constant:-16],
+        [chartScroll.bottomAnchor constraintEqualToAnchor:chartCard.bottomAnchor constant:-12],
+
+        [chart.topAnchor constraintEqualToAnchor:chartScroll.contentLayoutGuide.topAnchor],
+        [chart.leadingAnchor constraintEqualToAnchor:chartScroll.contentLayoutGuide.leadingAnchor],
+        [chart.trailingAnchor constraintEqualToAnchor:chartScroll.contentLayoutGuide.trailingAnchor],
+        [chart.bottomAnchor constraintEqualToAnchor:chartScroll.contentLayoutGuide.bottomAnchor],
+        [chart.widthAnchor constraintEqualToConstant:chartContentWidth],
     ]];
     [stack addArrangedSubview:chartCard];
     [chartCard.heightAnchor constraintEqualToConstant:190].active = YES;
