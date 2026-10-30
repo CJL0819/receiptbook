@@ -29,6 +29,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (double)totalAmountOnDay:(NSDate *)day;
 - (double)totalAmountInMonthOf:(NSDate *)day;
 - (NSDictionary<NSNumber *, NSNumber *> *)totalByType;
+- (NSArray<Receipt *> *)receiptsOnDay:(NSDate *)day;
+- (NSArray<Receipt *> *)receiptsOfType:(ReceiptType)type;
+- (NSArray<NSDate *> *)distinctDaysWithReceipts;
+- (NSInteger)receiptCountInMonthOf:(NSDate *)day;
 
 @end
 

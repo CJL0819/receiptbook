@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026
 #import "Receipt.h"
+#import <UIKit/UIKit.h>
 
 NSString *ReceiptTypeDisplayName(ReceiptType type) {
     switch (type) {
@@ -11,6 +12,28 @@ NSString *ReceiptTypeDisplayName(ReceiptType type) {
         case ReceiptTypeOther: return @"其他";
     }
     return @"其他";
+}
+
+NSString *ReceiptTypeSymbolName(ReceiptType type) {
+    switch (type) {
+        case ReceiptTypeInvoice: return @"doc.text";
+        case ReceiptTypeReceipt: return @"doc.text.image";
+        case ReceiptTypeFlight: return @"airplane";
+        case ReceiptTypeToll: return @"road.lanes";
+        case ReceiptTypeOther: return @"square.grid.2x2";
+    }
+    return @"square.grid.2x2";
+}
+
+UIColor *ReceiptTypeTintColor(ReceiptType type) {
+    switch (type) {
+        case ReceiptTypeInvoice: return [UIColor systemBlueColor];
+        case ReceiptTypeReceipt: return [UIColor systemGreenColor];
+        case ReceiptTypeFlight: return [UIColor systemPurpleColor];
+        case ReceiptTypeToll: return [UIColor systemOrangeColor];
+        case ReceiptTypeOther: return [UIColor systemGrayColor];
+    }
+    return [UIColor systemGrayColor];
 }
 
 @implementation Receipt

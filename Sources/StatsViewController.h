@@ -2,5 +2,5 @@
 // Copyright (c) 2026
 #import <UIKit/UIKit.h>
 
-@interface StatsViewController : UIViewController
+@interface StatsViewController : UITableViewController
 @end

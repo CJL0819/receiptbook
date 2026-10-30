@@ -164,4 +164,47 @@
     return result;
 }
 
+- (NSArray<Receipt *> *)receiptsOnDay:(NSDate *)day {
+    NSCalendar *calendar = [NSCalendar currentCalendar];
+    NSMutableArray *result = [NSMutableArray array];
+    for (Receipt *receipt in self.mutableReceipts) {
+        if ([calendar isDate:receipt.date inSameDayAsDate:day]) {
+            [result addObject:receipt];
+        }
+    }
+    return result;
+}
+
+- (NSArray<Receipt *> *)receiptsOfType:(ReceiptType)type {
+    NSMutableArray *result = [NSMutableArray array];
+    for (Receipt *receipt in self.mutableReceipts) {
+        if (receipt.type == type) {
+            [result addObject:receipt];
+        }
+    }
+    return result;
+}
+
+- (NSArray<NSDate *> *)distinctDaysWithReceipts {
+    NSCalendar *calendar = [NSCalendar currentCalendar];
+    NSMutableSet<NSDate *> *days = [NSMutableSet set];
+    for (Receipt *receipt in self.mutableReceipts) {
+        [days addObject:[calendar startOfDayForDate:receipt.date]];
+    }
+    return [days.allObjects sortedArrayUsingComparator:^NSComparisonResult(NSDate *a, NSDate *b) {
+        return [b compare:a];
+    }];
+}
+
+- (NSInteger)receiptCountInMonthOf:(NSDate *)day {
+    NSCalendar *calendar = [NSCalendar currentCalendar];
+    NSInteger count = 0;
+    for (Receipt *receipt in self.mutableReceipts) {
+        if ([calendar isDate:receipt.date equalToDate:day toUnitGranularity:NSCalendarUnitMonth]) {
+            count += 1;
+        }
+    }
+    return count;
+}
+
 @end

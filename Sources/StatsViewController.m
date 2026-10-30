@@ -3,140 +3,255 @@
 #import "StatsViewController.h"
 #import "ReceiptStore.h"
 #import "Receipt.h"
-
-@interface StatsViewController ()
-@property (nonatomic, strong) UIScrollView *scrollView;
-@property (nonatomic, strong) UIStackView *contentStack;
-@end
+#import "ReceiptListViewController.h"
 
 @implementation StatsViewController
+
+- (instancetype)init {
+    self = [super initWithStyle:UITableViewStyleInsetGrouped];
+    return self;
+}
 
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.title = @"统计";
-    self.view.backgroundColor = [UIColor systemBackgroundColor];
-
-    self.scrollView = [[UIScrollView alloc] init];
-    self.scrollView.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.view addSubview:self.scrollView];
-    [NSLayoutConstraint activateConstraints:@[
-        [self.scrollView.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor],
-        [self.scrollView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
-        [self.scrollView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
-        [self.scrollView.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor],
-    ]];
-
-    self.contentStack = [[UIStackView alloc] init];
-    self.contentStack.axis = UILayoutConstraintAxisVertical;
-    self.contentStack.spacing = 12;
-    self.contentStack.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.scrollView addSubview:self.contentStack];
-    [NSLayoutConstraint activateConstraints:@[
-        [self.contentStack.topAnchor constraintEqualToAnchor:self.scrollView.contentLayoutGuide.topAnchor constant:16],
-        [self.contentStack.leadingAnchor constraintEqualToAnchor:self.scrollView.contentLayoutGuide.leadingAnchor constant:16],
-        [self.contentStack.trailingAnchor constraintEqualToAnchor:self.scrollView.contentLayoutGuide.trailingAnchor constant:-16],
-        [self.contentStack.bottomAnchor constraintEqualToAnchor:self.scrollView.contentLayoutGuide.bottomAnchor constant:-16],
-        [self.contentStack.widthAnchor constraintEqualToAnchor:self.scrollView.frameLayoutGuide.widthAnchor constant:-32],
-    ]];
-    [self refresh];
+    self.tableView.rowHeight = UITableViewAutomaticDimension;
+    self.tableView.estimatedRowHeight = 56;
 }
 
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
-    [self refresh];
+    self.tableView.tableHeaderView = [self buildHeaderView];
+    [self.tableView reloadData];
 }
 
-- (void)refresh {
-    for (UIView *subview in self.contentStack.arrangedSubviews) {
-        [self.contentStack removeArrangedSubview:subview];
-        [subview removeFromSuperview];
-    }
+#pragma mark - Header
+
+- (UIView *)buildHeaderView {
+    CGFloat width = CGRectGetWidth(self.tableView.bounds);
+    UIView *container = [[UIView alloc] initWithFrame:CGRectMake(0, 0, width, 300)];
 
     NSCalendar *calendar = [NSCalendar currentCalendar];
     NSDate *now = [NSDate date];
+    ReceiptStore *store = [ReceiptStore sharedStore];
 
-    double monthTotal = [[ReceiptStore sharedStore] totalAmountInMonthOf:now];
-    double todayTotal = [[ReceiptStore sharedStore] totalAmountOnDay:now];
-    double allTotal = [[ReceiptStore sharedStore] totalAmount];
+    double monthTotal = [store totalAmountInMonthOf:now];
+    double todayTotal = [store totalAmountOnDay:now];
+    double allTotal = store.totalAmount;
     NSInteger dayOfMonth = [calendar component:NSCalendarUnitDay fromDate:now];
     double monthAverage = dayOfMonth > 0 ? monthTotal / (double)dayOfMonth : 0;
+    NSInteger monthCount = [store receiptCountInMonthOf:now];
 
-    [self.contentStack addArrangedSubview:[self metricCardWithTitle:@"本月支出" value:[self money:monthTotal]]];
-    [self.contentStack addArrangedSubview:[self metricCardWithTitle:@"今日支出" value:[self money:todayTotal]]];
-    [self.contentStack addArrangedSubview:[self metricCardWithTitle:@"累计支出" value:[self money:allTotal]]];
-    [self.contentStack addArrangedSubview:[self metricCardWithTitle:@"本月日均" value:[self money:monthAverage]]];
+    UIStackView *stack = [[UIStackView alloc] init];
+    stack.axis = UILayoutConstraintAxisVertical;
+    stack.spacing = 12;
+    stack.translatesAutoresizingMaskIntoConstraints = NO;
+    [container addSubview:stack];
+    [NSLayoutConstraint activateConstraints:@[
+        [stack.topAnchor constraintEqualToAnchor:container.topAnchor constant:16],
+        [stack.leadingAnchor constraintEqualToAnchor:container.leadingAnchor constant:16],
+        [stack.trailingAnchor constraintEqualToAnchor:container.trailingAnchor constant:-16],
+        [stack.bottomAnchor constraintLessThanOrEqualToAnchor:container.bottomAnchor constant:-16],
+    ]];
 
-    UILabel *section = [[UILabel alloc] init];
-    section.text = @"按类型统计";
-    section.font = [UIFont preferredFontForTextStyle:UIFontTextStyleHeadline];
-    [self.contentStack addArrangedSubview:section];
+    UIView *hero = [self heroCardWithMonthTotal:monthTotal count:monthCount average:monthAverage];
+    [stack addArrangedSubview:hero];
+    [hero.heightAnchor constraintEqualToConstant:88].active = YES;
 
-    NSDictionary<NSNumber *, NSNumber *> *byType = [[ReceiptStore sharedStore] totalByType];
-    if (byType.count == 0) {
-        UILabel *empty = [[UILabel alloc] init];
-        empty.text = @"还没有票据，去「扫描」页添加第一张吧。";
-        empty.font = [UIFont preferredFontForTextStyle:UIFontTextStyleBody];
-        empty.textColor = [UIColor secondaryLabelColor];
-        empty.numberOfLines = 0;
-        [self.contentStack addArrangedSubview:empty];
-    } else {
-        ReceiptType types[] = {ReceiptTypeInvoice, ReceiptTypeReceipt, ReceiptTypeFlight, ReceiptTypeToll, ReceiptTypeOther};
-        for (NSInteger i = 0; i < 5; i++) {
-            NSNumber *key = @(types[i]);
-            double total = [byType[key] doubleValue];
-            if (total > 0) {
-                [self.contentStack addArrangedSubview:[self typeRowWithType:types[i] total:total]];
-            }
-        }
+    UIStackView *row1 = [[UIStackView alloc] initWithArrangedSubviews:@[
+        [self metricCardWithTitle:@"今日支出" value:[self money:todayTotal]],
+        [self metricCardWithTitle:@"累计支出" value:[self money:allTotal]]
+    ]];
+    row1.axis = UILayoutConstraintAxisHorizontal;
+    row1.spacing = 12;
+    row1.distribution = UIStackViewDistributionFillEqually;
+    [stack addArrangedSubview:row1];
+    for (UIView *card in row1.arrangedSubviews) {
+        [card.heightAnchor constraintEqualToConstant:76].active = YES;
     }
+
+    UIStackView *row2 = [[UIStackView alloc] initWithArrangedSubviews:@[
+        [self metricCardWithTitle:@"本月日均" value:[self money:monthAverage]],
+        [self metricCardWithTitle:@"本月笔数" value:[NSString stringWithFormat:@"%ld", (long)monthCount]]
+    ]];
+    row2.axis = UILayoutConstraintAxisHorizontal;
+    row2.spacing = 12;
+    row2.distribution = UIStackViewDistributionFillEqually;
+    [stack addArrangedSubview:row2];
+    for (UIView *card in row2.arrangedSubviews) {
+        [card.heightAnchor constraintEqualToConstant:76].active = YES;
+    }
+
+    return container;
+}
+
+- (UIView *)cardView {
+    UIView *card = [[UIView alloc] init];
+    card.backgroundColor = [UIColor secondarySystemBackgroundColor];
+    card.layer.cornerRadius = 12;
+    return card;
+}
+
+- (UILabel *)labelWithText:(NSString *)text font:(UIFont *)font color:(UIColor *)color {
+    UILabel *label = [[UILabel alloc] init];
+    label.text = text;
+    label.font = font;
+    label.textColor = color;
+    return label;
+}
+
+- (UIView *)heroCardWithMonthTotal:(double)monthTotal count:(NSInteger)count average:(double)average {
+    UIView *card = [self cardView];
+    UILabel *title = [self labelWithText:@"本月支出"
+                                   font:[UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline]
+                                  color:[UIColor secondaryLabelColor]];
+    UILabel *value = [self labelWithText:[self money:monthTotal]
+                                   font:[UIFont monospacedDigitSystemFontOfSize:34 weight:UIFontWeightSemibold]
+                                  color:[UIColor labelColor]];
+    UILabel *subtitle = [self labelWithText:[NSString stringWithFormat:@"共 %ld 笔 · 日均 %@", (long)count, [self money:average]]
+                                      font:[UIFont preferredFontForTextStyle:UIFontTextStyleFootnote]
+                                     color:[UIColor secondaryLabelColor]];
+    UIStackView *stack = [[UIStackView alloc] initWithArrangedSubviews:@[title, value, subtitle]];
+    stack.axis = UILayoutConstraintAxisVertical;
+    stack.spacing = 2;
+    stack.translatesAutoresizingMaskIntoConstraints = NO;
+    [card addSubview:stack];
+    [NSLayoutConstraint activateConstraints:@[
+        [stack.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:16],
+        [stack.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-16],
+        [stack.centerYAnchor constraintEqualToAnchor:card.centerYAnchor],
+    ]];
+    return card;
+}
+
+- (UIView *)metricCardWithTitle:(NSString *)title value:(NSString *)value {
+    UIView *card = [self cardView];
+    UILabel *titleLabel = [self labelWithText:title
+                                        font:[UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline]
+                                       color:[UIColor secondaryLabelColor]];
+    UILabel *valueLabel = [self labelWithText:value
+                                        font:[UIFont monospacedDigitSystemFontOfSize:20 weight:UIFontWeightSemibold]
+                                       color:[UIColor labelColor]];
+    UIStackView *stack = [[UIStackView alloc] initWithArrangedSubviews:@[titleLabel, valueLabel]];
+    stack.axis = UILayoutConstraintAxisVertical;
+    stack.spacing = 2;
+    stack.translatesAutoresizingMaskIntoConstraints = NO;
+    [card addSubview:stack];
+    [NSLayoutConstraint activateConstraints:@[
+        [stack.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:14],
+        [stack.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-14],
+        [stack.centerYAnchor constraintEqualToAnchor:card.centerYAnchor],
+    ]];
+    return card;
 }
 
 - (NSString *)money:(double)value {
     return [NSString stringWithFormat:@"¥%.2f", value];
 }
 
-- (UIView *)metricCardWithTitle:(NSString *)title value:(NSString *)value {
-    UIView *card = [[UIView alloc] init];
-    card.backgroundColor = [UIColor secondarySystemBackgroundColor];
-    card.layer.cornerRadius = 12;
+#pragma mark - Data
 
-    UILabel *titleLabel = [[UILabel alloc] init];
-    titleLabel.text = title;
-    titleLabel.font = [UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline];
-    titleLabel.textColor = [UIColor secondaryLabelColor];
-
-    UILabel *valueLabel = [[UILabel alloc] init];
-    valueLabel.text = value;
-    valueLabel.font = [UIFont monospacedDigitSystemFontOfSize:28 weight:UIFontWeightSemibold];
-
-    UIStackView *stack = [[UIStackView alloc] initWithArrangedSubviews:@[titleLabel, valueLabel]];
-    stack.axis = UILayoutConstraintAxisVertical;
-    stack.spacing = 4;
-    stack.translatesAutoresizingMaskIntoConstraints = NO;
-    [card addSubview:stack];
-    [NSLayoutConstraint activateConstraints:@[
-        [stack.topAnchor constraintEqualToAnchor:card.topAnchor constant:14],
-        [stack.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:16],
-        [stack.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-16],
-        [stack.bottomAnchor constraintEqualToAnchor:card.bottomAnchor constant:-14],
-    ]];
-    return card;
+- (NSArray<NSNumber *> *)visibleTypes {
+    NSMutableArray<NSNumber *> *result = [NSMutableArray array];
+    ReceiptType types[] = {ReceiptTypeInvoice, ReceiptTypeReceipt, ReceiptTypeFlight, ReceiptTypeToll, ReceiptTypeOther};
+    NSDictionary<NSNumber *, NSNumber *> *byType = [[ReceiptStore sharedStore] totalByType];
+    for (NSInteger i = 0; i < 5; i++) {
+        if ([byType[@(types[i])] doubleValue] > 0) {
+            [result addObject:@(types[i])];
+        }
+    }
+    return result;
 }
 
-- (UIView *)typeRowWithType:(ReceiptType)type total:(double)total {
-    UILabel *nameLabel = [[UILabel alloc] init];
-    nameLabel.text = ReceiptTypeDisplayName(type);
-    nameLabel.font = [UIFont preferredFontForTextStyle:UIFontTextStyleBody];
+- (NSArray<NSDate *> *)visibleDays {
+    return [[ReceiptStore sharedStore] distinctDaysWithReceipts];
+}
 
-    UILabel *amountLabel = [[UILabel alloc] init];
-    amountLabel.text = [self money:total];
-    amountLabel.font = [UIFont monospacedDigitSystemFontOfSize:17 weight:UIFontWeightMedium];
-    amountLabel.textAlignment = NSTextAlignmentRight;
+- (NSString *)dayTitleForDate:(NSDate *)date {
+    static NSDateFormatter *formatter;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        formatter = [[NSDateFormatter alloc] init];
+        formatter.locale = [NSLocale localeWithLocaleIdentifier:@"zh_CN"];
+        formatter.dateFormat = @"M月d日";
+    });
+    return [formatter stringFromDate:date];
+}
 
-    UIStackView *row = [[UIStackView alloc] initWithArrangedSubviews:@[nameLabel, amountLabel]];
-    row.axis = UILayoutConstraintAxisHorizontal;
-    row.distribution = UIStackViewDistributionEqualSpacing;
-    return row;
+#pragma mark - UITableViewDataSource
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
+    if ([ReceiptStore sharedStore].receipts.count == 0) return 1;
+    return 2;
+}
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    if ([ReceiptStore sharedStore].receipts.count == 0) return 1;
+    if (section == 0) return [self visibleTypes].count;
+    return [self visibleDays].count;
+}
+
+- (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
+    if ([ReceiptStore sharedStore].receipts.count == 0) return nil;
+    return section == 0 ? @"分类" : @"按日期";
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    if ([ReceiptStore sharedStore].receipts.count == 0) {
+        UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
+        cell.textLabel.text = @"还没有票据，去「扫描」页添加第一张吧。";
+        cell.textLabel.textColor = [UIColor secondaryLabelColor];
+        cell.textLabel.numberOfLines = 0;
+        cell.textLabel.textAlignment = NSTextAlignmentCenter;
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        return cell;
+    }
+    if (indexPath.section == 0) {
+        return [self categoryCellForIndex:indexPath.row];
+    }
+    return [self dayCellForIndex:indexPath.row];
+}
+
+- (UITableViewCell *)categoryCellForIndex:(NSInteger)index {
+    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:nil];
+    ReceiptType type = (ReceiptType)[[self visibleTypes][index] integerValue];
+    cell.imageView.image = [UIImage systemImageNamed:ReceiptTypeSymbolName(type)];
+    cell.imageView.tintColor = ReceiptTypeTintColor(type);
+    cell.textLabel.text = ReceiptTypeDisplayName(type);
+    NSArray<Receipt *> *receipts = [[ReceiptStore sharedStore] receiptsOfType:type];
+    double total = 0;
+    for (Receipt *receipt in receipts) total += receipt.amount;
+    cell.detailTextLabel.text = [NSString stringWithFormat:@"%ld 笔 · %@", (long)receipts.count, [self money:total]];
+    cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+    return cell;
+}
+
+- (UITableViewCell *)dayCellForIndex:(NSInteger)index {
+    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:nil];
+    NSDate *day = [self visibleDays][index];
+    cell.textLabel.text = [self dayTitleForDate:day];
+    NSArray<Receipt *> *receipts = [[ReceiptStore sharedStore] receiptsOnDay:day];
+    double total = 0;
+    for (Receipt *receipt in receipts) total += receipt.amount;
+    cell.detailTextLabel.text = [NSString stringWithFormat:@"%ld 笔 · %@", (long)receipts.count, [self money:total]];
+    cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+    return cell;
+}
+
+#pragma mark - UITableViewDelegate
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+    if ([ReceiptStore sharedStore].receipts.count == 0) return;
+    if (indexPath.section == 0) {
+        ReceiptType type = (ReceiptType)[[self visibleTypes][indexPath.row] integerValue];
+        ReceiptListViewController *list = [[ReceiptListViewController alloc] initWithType:type];
+        [self.navigationController pushViewController:list animated:YES];
+    } else {
+        NSDate *day = [self visibleDays][indexPath.row];
+        ReceiptListViewController *list = [[ReceiptListViewController alloc] initWithDay:day];
+        [self.navigationController pushViewController:list animated:YES];
+    }
 }
 
 @end

@@ -2,6 +2,8 @@
 // Copyright (c) 2026
 #import <Foundation/Foundation.h>
 
+@class UIColor;
+
 NS_ASSUME_NONNULL_BEGIN
 
 typedef NS_ENUM(NSInteger, ReceiptType) {
@@ -13,6 +15,8 @@ typedef NS_ENUM(NSInteger, ReceiptType) {
 };
 
 NSString *ReceiptTypeDisplayName(ReceiptType type);
+NSString *ReceiptTypeSymbolName(ReceiptType type);
+UIColor *ReceiptTypeTintColor(ReceiptType type);
 
 /// 一张票据：日期、金额、商家、备注，以及扫描页数。
 /// 图片本体由 ReceiptStore 按页保存在磁盘上，这里只记录页数。
