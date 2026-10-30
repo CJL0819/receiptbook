@@ -69,7 +69,9 @@
         CGFloat x = slotWidth * (CGFloat)i + (slotWidth - barWidth) / 2.0;
         CGFloat y = baselineY - barHeight;
         CGFloat h = MAX(barHeight, value > 0 ? 2 : 0);
-        UIBezierPath *path = [self barPathAtX:x y:y width:barWidth height:h];
+        CGRect barRect = CGRectMake(x, y, barWidth, h);
+        UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:barRect
+                                                         cornerRadius:MIN(barWidth / 2.0, 3.0)];
         [self.barColor setFill];
         [path fill];
     }
@@ -106,28 +108,8 @@
 }
 
 - (UIBezierPath *)barPathAtX:(CGFloat)x y:(CGFloat)y width:(CGFloat)width height:(CGFloat)height {
-    CGFloat radius = MIN(width / 2.0, 4.0);
-    if (height <= radius * 2) {
-        return [UIBezierPath bezierPathWithRoundedRect:CGRectMake(x, y, width, height)
-                                          cornerRadius:MIN(width / 2.0, height / 2.0)];
-    }
-    UIBezierPath *path = [UIBezierPath bezierPath];
-    [path moveToPoint:CGPointMake(x, y + height)];
-    [path addLineToPoint:CGPointMake(x, y + radius)];
-    [path addArcWithCenter:CGPointMake(x + radius, y + radius)
-                    radius:radius
-                startAngle:M_PI
-                  endAngle:M_PI * 1.5
-                 clockwise:YES];
-    [path addLineToPoint:CGPointMake(x + width - radius, y)];
-    [path addArcWithCenter:CGPointMake(x + width - radius, y + radius)
-                    radius:radius
-                startAngle:M_PI * 1.5
-                  endAngle:0
-                 clockwise:YES];
-    [path addLineToPoint:CGPointMake(x + width, y + height)];
-    [path closePath];
-    return path;
+    return [UIBezierPath bezierPathWithRoundedRect:CGRectMake(x, y, width, height)
+                                      cornerRadius:MIN(width / 2.0, 3.0)];
 }
 
 @end

@@ -101,43 +101,34 @@
     }
 
     UIView *chartCard = [self cardView];
-    UILabel *chartTitle = [self labelWithText:@"每日支出"
-                                        font:[UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline]
-                                       color:[UIColor secondaryLabelColor]];
-    UIScrollView *chartScroll = [[UIScrollView alloc] init];
+    CGFloat cardWidth = width - 32;
+    CGFloat cardHeight = 190;
+
+    UILabel *chartTitle = [[UILabel alloc] initWithFrame:CGRectMake(16, 12, cardWidth - 32, 15)];
+    chartTitle.text = @"每日支出";
+    chartTitle.font = [UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline];
+    chartTitle.textColor = [UIColor secondaryLabelColor];
+
+    CGFloat scrollX = 16;
+    CGFloat scrollY = 34;
+    CGFloat scrollWidth = cardWidth - 32;
+    CGFloat scrollHeight = cardHeight - scrollY - 12;
+
+    UIScrollView *chartScroll = [[UIScrollView alloc] initWithFrame:CGRectMake(scrollX, scrollY, scrollWidth, scrollHeight)];
     chartScroll.showsHorizontalScrollIndicator = YES;
-    chartScroll.translatesAutoresizingMaskIntoConstraints = NO;
+
+    CGFloat chartContentWidth = MAX(scrollWidth, dailyTotals.count * 22.0);
+    DailyBarChartView *chart = [[DailyBarChartView alloc] initWithFrame:CGRectMake(0, 0, chartContentWidth, scrollHeight)];
+    chart.values = dailyTotals;
+    [chartScroll addSubview:chart];
+    chartScroll.contentSize = CGSizeMake(chartContentWidth, scrollHeight);
+    chartScroll.contentOffset = CGPointMake(chartContentWidth - scrollWidth, 0);
     self.chartScrollView = chartScroll;
 
-    DailyBarChartView *chart = [[DailyBarChartView alloc] initWithFrame:CGRectZero];
-    chart.contentMode = UIViewContentModeRedraw;
-    chart.values = dailyTotals;
-    chart.translatesAutoresizingMaskIntoConstraints = NO;
-    [chartScroll addSubview:chart];
-
-    chartTitle.translatesAutoresizingMaskIntoConstraints = NO;
     [chartCard addSubview:chartTitle];
     [chartCard addSubview:chartScroll];
-
-    CGFloat chartScrollWidth = width - 64; // 卡片左右各 16 + 内容左右各 16
-    CGFloat chartContentWidth = MAX(chartScrollWidth, dailyTotals.count * 22.0);
-
-    [NSLayoutConstraint activateConstraints:@[
-        [chartTitle.topAnchor constraintEqualToAnchor:chartCard.topAnchor constant:12],
-        [chartTitle.leadingAnchor constraintEqualToAnchor:chartCard.leadingAnchor constant:16],
-
-        [chartScroll.topAnchor constraintEqualToAnchor:chartTitle.bottomAnchor constant:8],
-        [chartScroll.leadingAnchor constraintEqualToAnchor:chartCard.leadingAnchor constant:16],
-        [chartScroll.trailingAnchor constraintEqualToAnchor:chartCard.trailingAnchor constant:-16],
-        [chartScroll.bottomAnchor constraintEqualToAnchor:chartCard.bottomAnchor constant:-12],
-
-        [chart.topAnchor constraintEqualToAnchor:chartScroll.contentLayoutGuide.topAnchor],
-        [chart.leadingAnchor constraintEqualToAnchor:chartScroll.contentLayoutGuide.leadingAnchor],
-        [chart.widthAnchor constraintEqualToConstant:chartContentWidth],
-        [chart.heightAnchor constraintEqualToAnchor:chartScroll.frameLayoutGuide.heightAnchor],
-    ]];
     [stack addArrangedSubview:chartCard];
-    [chartCard.heightAnchor constraintEqualToConstant:190].active = YES;
+    [chartCard.heightAnchor constraintEqualToConstant:cardHeight].active = YES;
 
     return container;
 }
