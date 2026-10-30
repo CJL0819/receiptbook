@@ -112,12 +112,13 @@
     CGFloat scrollX = 16;
     CGFloat scrollY = 34;
     CGFloat scrollWidth = cardWidth - 32;
-    CGFloat scrollHeight = cardHeight - scrollY - 12;
+    CGFloat hintHeight = 12;
+    CGFloat scrollHeight = cardHeight - scrollY - 6 - hintHeight - 8;
 
     UIScrollView *chartScroll = [[UIScrollView alloc] initWithFrame:CGRectMake(scrollX, scrollY, scrollWidth, scrollHeight)];
-    chartScroll.showsHorizontalScrollIndicator = YES;
+    chartScroll.showsHorizontalScrollIndicator = NO;
 
-    CGFloat chartContentWidth = MAX(scrollWidth, dailyTotals.count * 22.0);
+    CGFloat chartContentWidth = MAX(scrollWidth, dailyTotals.count * 14.0);
     DailyBarChartView *chart = [[DailyBarChartView alloc] initWithFrame:CGRectMake(0, 0, chartContentWidth, scrollHeight)];
     chart.values = dailyTotals;
     [chartScroll addSubview:chart];
@@ -125,8 +126,15 @@
     chartScroll.contentOffset = CGPointMake(chartContentWidth - scrollWidth, 0);
     self.chartScrollView = chartScroll;
 
+    UILabel *hint = [[UILabel alloc] initWithFrame:CGRectMake(16, cardHeight - 8 - hintHeight, cardWidth - 32, hintHeight)];
+    hint.text = @"左右滑动查看整月";
+    hint.font = [UIFont preferredFontForTextStyle:UIFontTextStyleCaption2];
+    hint.textColor = [UIColor tertiaryLabelColor];
+    hint.textAlignment = NSTextAlignmentCenter;
+
     [chartCard addSubview:chartTitle];
     [chartCard addSubview:chartScroll];
+    [chartCard addSubview:hint];
     [stack addArrangedSubview:chartCard];
     [chartCard.heightAnchor constraintEqualToConstant:cardHeight].active = YES;
 
