@@ -29,7 +29,7 @@
       "resources": [],
       "infoPlist": "Resources/Info.plist",
       "entitlements": "Packaging/App.entitlements",
-      "frameworks": ["Foundation", "UIKit", "VisionKit"]
+      "frameworks": ["Foundation", "UIKit", "VisionKit", "Vision"]
     }
   ],
   "build": {

@@ -4,6 +4,7 @@
 #import <VisionKit/VisionKit.h>
 #import "ReceiptStore.h"
 #import "Receipt.h"
+#import "ReceiptOCR.h"
 
 @interface AddReceiptViewController () <VNDocumentCameraViewControllerDelegate, UITextFieldDelegate>
 @property (nonatomic, strong) UIScrollView *scrollView;
@@ -190,6 +191,42 @@
     [self.scrollView scrollRectToVisible:fieldRect animated:YES];
 }
 
+- (void)runOCROnScannedImages {
+    NSArray<UIImage *> *images = [self.scannedImages copy];
+    if (images.count == 0) return;
+    self.scanStatusLabel.text = @"正在识别票据…";
+    __weak typeof(self) weakSelf = self;
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        ReceiptOCRResult *result = [ReceiptOCR analyzeImages:images];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [weakSelf applyOCRResult:result];
+        });
+    });
+}
+
+- (void)applyOCRResult:(ReceiptOCRResult *)result {
+    BOOL foundAny = NO;
+    if (result.amount > 0 && self.amountField.text.length == 0) {
+        self.amountField.text = [NSString stringWithFormat:@"%.2f", result.amount];
+        foundAny = YES;
+    }
+    if (result.merchant.length > 0 && self.merchantField.text.length == 0) {
+        self.merchantField.text = result.merchant;
+        foundAny = YES;
+    }
+    if (result.date) {
+        self.datePicker.date = result.date;
+        foundAny = YES;
+    }
+    if (result.summary.length > 0 && self.noteField.text.length == 0) {
+        self.noteField.text = result.summary;
+        foundAny = YES;
+    }
+    self.scanStatusLabel.text = foundAny
+        ? @"已识别，请核对下方信息后保存。"
+        : @"未能自动识别金额/商家，请手动填写。";
+}
+
 - (void)scanTapped {
     [self dismissKeyboard];
     if (![VNDocumentCameraViewController isSupported]) {
@@ -261,6 +298,7 @@
     [controller dismissViewControllerAnimated:YES completion:^{
         self.scannedImages = images;
         [self refreshPreview];
+        [self runOCROnScannedImages];
     }];
 }
 
