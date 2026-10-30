@@ -207,4 +207,23 @@
     return count;
 }
 
+- (NSArray<NSNumber *> *)dailyTotalsInMonthOf:(NSDate *)day {
+    NSCalendar *calendar = [NSCalendar currentCalendar];
+    NSRange range = [calendar rangeOfUnit:NSCalendarUnitDay inUnit:NSCalendarUnitMonth forDate:day];
+    NSMutableArray<NSNumber *> *totals = [NSMutableArray arrayWithCapacity:range.length];
+    for (NSInteger i = 0; i < (NSInteger)range.length; i++) {
+        [totals addObject:@0];
+    }
+    for (Receipt *receipt in self.mutableReceipts) {
+        if ([calendar isDate:receipt.date equalToDate:day toUnitGranularity:NSCalendarUnitMonth]) {
+            NSInteger dayOfMonth = [calendar component:NSCalendarUnitDay fromDate:receipt.date];
+            NSInteger index = dayOfMonth - 1;
+            if (index >= 0 && index < (NSInteger)range.length) {
+                totals[index] = @([totals[index] doubleValue] + receipt.amount);
+            }
+        }
+    }
+    return totals;
+}
+
 @end

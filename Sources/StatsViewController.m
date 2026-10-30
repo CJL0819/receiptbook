@@ -4,6 +4,8 @@
 #import "ReceiptStore.h"
 #import "Receipt.h"
 #import "ReceiptListViewController.h"
+#import "StatsCategoryCell.h"
+#import "DailyBarChartView.h"
 
 @implementation StatsViewController
 
@@ -29,7 +31,7 @@
 
 - (UIView *)buildHeaderView {
     CGFloat width = CGRectGetWidth(self.tableView.bounds);
-    UIView *container = [[UIView alloc] initWithFrame:CGRectMake(0, 0, width, 300)];
+    UIView *container = [[UIView alloc] initWithFrame:CGRectMake(0, 0, width, 500)];
 
     NSCalendar *calendar = [NSCalendar currentCalendar];
     NSDate *now = [NSDate date];
@@ -41,6 +43,7 @@
     NSInteger dayOfMonth = [calendar component:NSCalendarUnitDay fromDate:now];
     double monthAverage = dayOfMonth > 0 ? monthTotal / (double)dayOfMonth : 0;
     NSInteger monthCount = [store receiptCountInMonthOf:now];
+    NSArray<NSNumber *> *dailyTotals = [store dailyTotalsInMonthOf:now];
 
     UIStackView *stack = [[UIStackView alloc] init];
     stack.axis = UILayoutConstraintAxisVertical;
@@ -81,6 +84,16 @@
     for (UIView *card in row2.arrangedSubviews) {
         [card.heightAnchor constraintEqualToConstant:76].active = YES;
     }
+
+    UILabel *chartTitle = [self labelWithText:@"每日支出"
+                                        font:[UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline]
+                                       color:[UIColor secondaryLabelColor]];
+    [stack addArrangedSubview:chartTitle];
+
+    DailyBarChartView *chart = [[DailyBarChartView alloc] initWithFrame:CGRectZero];
+    chart.values = dailyTotals;
+    [stack addArrangedSubview:chart];
+    [chart.heightAnchor constraintEqualToConstant:150].active = YES;
 
     return container;
 }
@@ -213,16 +226,15 @@
 }
 
 - (UITableViewCell *)categoryCellForIndex:(NSInteger)index {
-    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:nil];
     ReceiptType type = (ReceiptType)[[self visibleTypes][index] integerValue];
-    cell.imageView.image = [UIImage systemImageNamed:ReceiptTypeSymbolName(type)];
-    cell.imageView.tintColor = ReceiptTypeTintColor(type);
-    cell.textLabel.text = ReceiptTypeDisplayName(type);
     NSArray<Receipt *> *receipts = [[ReceiptStore sharedStore] receiptsOfType:type];
     double total = 0;
     for (Receipt *receipt in receipts) total += receipt.amount;
-    cell.detailTextLabel.text = [NSString stringWithFormat:@"%ld 笔 · %@", (long)receipts.count, [self money:total]];
-    cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+    double allTotal = [ReceiptStore sharedStore].totalAmount;
+    double fraction = allTotal > 0 ? total / allTotal : 0;
+
+    StatsCategoryCell *cell = [[StatsCategoryCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
+    [cell configureWithType:type count:receipts.count total:total fraction:fraction];
     return cell;
 }
 
