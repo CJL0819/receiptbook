@@ -46,7 +46,7 @@
 
 - (UIView *)buildHeaderView {
     CGFloat width = CGRectGetWidth(self.tableView.bounds);
-    UIView *container = [[UIView alloc] initWithFrame:CGRectMake(0, 0, width, 520)];
+    UIView *container = [[UIView alloc] initWithFrame:CGRectMake(0, 0, width, 498)];
 
     NSCalendar *calendar = [NSCalendar currentCalendar];
     NSDate *now = [NSDate date];
@@ -126,8 +126,18 @@
     chartScroll.contentOffset = CGPointMake(chartContentWidth - scrollWidth, 0);
     self.chartScrollView = chartScroll;
 
+    __weak typeof(self) weakSelf = self;
+    chart.onTapDay = ^(NSInteger day) {
+        NSCalendar *calendar = [NSCalendar currentCalendar];
+        NSDateComponents *comps = [calendar components:(NSCalendarUnitYear | NSCalendarUnitMonth) fromDate:[NSDate date]];
+        comps.day = day;
+        NSDate *date = [calendar dateFromComponents:comps];
+        ReceiptListViewController *list = [[ReceiptListViewController alloc] initWithDay:date];
+        [weakSelf.navigationController pushViewController:list animated:YES];
+    };
+
     UILabel *hint = [[UILabel alloc] initWithFrame:CGRectMake(16, cardHeight - 8 - hintHeight, cardWidth - 32, hintHeight)];
-    hint.text = @"左右滑动查看整月";
+    hint.text = @"左右滑动查看整月 · 点柱子看当天";
     hint.font = [UIFont preferredFontForTextStyle:UIFontTextStyleCaption2];
     hint.textColor = [UIColor tertiaryLabelColor];
     hint.textAlignment = NSTextAlignmentCenter;

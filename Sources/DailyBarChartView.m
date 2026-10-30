@@ -10,6 +10,8 @@
         self.backgroundColor = [UIColor clearColor];
         _barColor = [UIColor systemBlueColor];
         _values = @[];
+        UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
+        [self addGestureRecognizer:tap];
     }
     return self;
 }
@@ -22,6 +24,17 @@
 - (void)setBarColor:(UIColor *)barColor {
     _barColor = barColor;
     [self setNeedsDisplay];
+}
+
+- (void)handleTap:(UITapGestureRecognizer *)tap {
+    NSUInteger count = self.values.count;
+    if (count == 0 || !self.onTapDay) return;
+    CGPoint point = [tap locationInView:self];
+    CGFloat slotWidth = CGRectGetWidth(self.bounds) / (CGFloat)count;
+    NSInteger index = (NSInteger)(point.x / slotWidth);
+    if (index < 0 || index >= (NSInteger)count) return;
+    if (self.values[index].doubleValue <= 0) return;
+    self.onTapDay(index + 1);
 }
 
 - (void)drawRect:(CGRect)rect {

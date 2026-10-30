@@ -8,6 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface DailyBarChartView : UIView
 @property (nonatomic, copy) NSArray<NSNumber *> *values; // 每日金额，index 0 = 当月 1 号
 @property (nonatomic, strong) UIColor *barColor;
+@property (nonatomic, copy, nullable) void (^onTapDay)(NSInteger day); // 点击柱子，day 为 1 起
 @end
 
 NS_ASSUME_NONNULL_END
