@@ -7,6 +7,11 @@
 #import "StatsCategoryCell.h"
 #import "DailyBarChartView.h"
 
+@interface StatsViewController ()
+@property (nonatomic, strong) UIScrollView *chartScrollView;
+@property (nonatomic, assign) BOOL hasScrolledChart;
+@end
+
 @implementation StatsViewController
 
 - (instancetype)init {
@@ -23,9 +28,18 @@
 
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
+    self.hasScrolledChart = NO;
     self.tableView.tableHeaderView = [self buildHeaderView];
     [self.tableView reloadData];
     [self.tableView setContentOffset:CGPointZero animated:NO];
+}
+
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    if (self.hasScrolledChart || !self.chartScrollView) return;
+    CGFloat offsetX = MAX(0, self.chartScrollView.contentSize.width - self.chartScrollView.bounds.size.width);
+    [self.chartScrollView setContentOffset:CGPointMake(offsetX, 0) animated:NO];
+    self.hasScrolledChart = YES;
 }
 
 #pragma mark - Header
@@ -93,8 +107,10 @@
     UIScrollView *chartScroll = [[UIScrollView alloc] init];
     chartScroll.showsHorizontalScrollIndicator = YES;
     chartScroll.translatesAutoresizingMaskIntoConstraints = NO;
+    self.chartScrollView = chartScroll;
 
     DailyBarChartView *chart = [[DailyBarChartView alloc] initWithFrame:CGRectZero];
+    chart.contentMode = UIViewContentModeRedraw;
     chart.values = dailyTotals;
     chart.translatesAutoresizingMaskIntoConstraints = NO;
     [chartScroll addSubview:chart];
