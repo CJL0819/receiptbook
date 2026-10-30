@@ -19,7 +19,7 @@ NSString *ReceiptTypeSymbolName(ReceiptType type) {
         case ReceiptTypeInvoice: return @"doc.text";
         case ReceiptTypeReceipt: return @"doc.text.image";
         case ReceiptTypeFlight: return @"airplane";
-        case ReceiptTypeToll: return @"road.lanes";
+        case ReceiptTypeToll: return @"car.fill";
         case ReceiptTypeOther: return @"square.grid.2x2";
     }
     return @"square.grid.2x2";

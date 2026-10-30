@@ -25,13 +25,14 @@
     [super viewWillAppear:animated];
     self.tableView.tableHeaderView = [self buildHeaderView];
     [self.tableView reloadData];
+    [self.tableView setContentOffset:CGPointZero animated:NO];
 }
 
 #pragma mark - Header
 
 - (UIView *)buildHeaderView {
     CGFloat width = CGRectGetWidth(self.tableView.bounds);
-    UIView *container = [[UIView alloc] initWithFrame:CGRectMake(0, 0, width, 500)];
+    UIView *container = [[UIView alloc] initWithFrame:CGRectMake(0, 0, width, 520)];
 
     NSCalendar *calendar = [NSCalendar currentCalendar];
     NSDate *now = [NSDate date];
@@ -85,15 +86,26 @@
         [card.heightAnchor constraintEqualToConstant:76].active = YES;
     }
 
+    UIView *chartCard = [self cardView];
     UILabel *chartTitle = [self labelWithText:@"每日支出"
                                         font:[UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline]
                                        color:[UIColor secondaryLabelColor]];
-    [stack addArrangedSubview:chartTitle];
-
     DailyBarChartView *chart = [[DailyBarChartView alloc] initWithFrame:CGRectZero];
     chart.values = dailyTotals;
-    [stack addArrangedSubview:chart];
-    [chart.heightAnchor constraintEqualToConstant:150].active = YES;
+    chartTitle.translatesAutoresizingMaskIntoConstraints = NO;
+    chart.translatesAutoresizingMaskIntoConstraints = NO;
+    [chartCard addSubview:chartTitle];
+    [chartCard addSubview:chart];
+    [NSLayoutConstraint activateConstraints:@[
+        [chartTitle.topAnchor constraintEqualToAnchor:chartCard.topAnchor constant:12],
+        [chartTitle.leadingAnchor constraintEqualToAnchor:chartCard.leadingAnchor constant:16],
+        [chart.topAnchor constraintEqualToAnchor:chartTitle.bottomAnchor constant:8],
+        [chart.leadingAnchor constraintEqualToAnchor:chartCard.leadingAnchor constant:16],
+        [chart.trailingAnchor constraintEqualToAnchor:chartCard.trailingAnchor constant:-16],
+        [chart.bottomAnchor constraintEqualToAnchor:chartCard.bottomAnchor constant:-12],
+    ]];
+    [stack addArrangedSubview:chartCard];
+    [chartCard.heightAnchor constraintEqualToConstant:190].active = YES;
 
     return container;
 }
