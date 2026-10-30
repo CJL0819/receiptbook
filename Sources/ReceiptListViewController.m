@@ -77,6 +77,7 @@
 
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
+    self.tableView.tableHeaderView = [self buildSummaryHeader];
     [self.tableView reloadData];
     [self updateEmptyState];
 }
@@ -104,6 +105,48 @@
     } else {
         self.tableView.backgroundView = nil;
     }
+}
+
+- (UIView *)buildSummaryHeader {
+    if (!self.filtersByType && !self.filterDay) return nil;
+    NSArray<Receipt *> *receipts = self.visibleReceipts;
+    if (receipts.count == 0) return nil;
+
+    double total = 0;
+    for (Receipt *receipt in receipts) total += receipt.amount;
+
+    CGFloat width = CGRectGetWidth(self.tableView.bounds);
+    UIView *container = [[UIView alloc] initWithFrame:CGRectMake(0, 0, width, 100)];
+
+    UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(20, 14, width - 40, 16)];
+    title.font = [UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline];
+    title.textColor = [UIColor secondaryLabelColor];
+    title.text = self.filtersByType
+        ? [NSString stringWithFormat:@"%@支出", ReceiptTypeDisplayName(self.filterType)]
+        : @"当日支出";
+
+    UILabel *value = [[UILabel alloc] initWithFrame:CGRectMake(20, 30, width - 40, 38)];
+    value.font = [UIFont monospacedDigitSystemFontOfSize:30 weight:UIFontWeightSemibold];
+    value.textColor = [UIColor labelColor];
+    value.text = [NSString stringWithFormat:@"¥%.2f", total];
+
+    NSString *subtitleText;
+    if (self.filtersByType) {
+        double allTotal = [ReceiptStore sharedStore].totalAmount;
+        double percent = allTotal > 0 ? total / allTotal * 100.0 : 0;
+        subtitleText = [NSString stringWithFormat:@"%ld 笔 · 占总支出 %.0f%%", (long)receipts.count, percent];
+    } else {
+        subtitleText = [NSString stringWithFormat:@"%ld 笔", (long)receipts.count];
+    }
+    UILabel *subtitle = [[UILabel alloc] initWithFrame:CGRectMake(20, 70, width - 40, 14)];
+    subtitle.font = [UIFont preferredFontForTextStyle:UIFontTextStyleFootnote];
+    subtitle.textColor = [UIColor secondaryLabelColor];
+    subtitle.text = subtitleText;
+
+    [container addSubview:title];
+    [container addSubview:value];
+    [container addSubview:subtitle];
+    return container;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
